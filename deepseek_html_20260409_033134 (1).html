@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>补语造句工坊 · AI 批改</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #FDFBF7;
+            font-family: 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+            padding: 30px 20px;
+            color: #2C3A2F;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 32px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            border: 1px solid #E2E6DF;
+        }
+        h1 {
+            font-size: 2rem;
+            color: #6B8E7F;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .sub {
+            text-align: center;
+            color: #7C8E7A;
+            margin-bottom: 32px;
+        }
+        .image-panel {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .image-panel img {
+            max-width: 100%;
+            border-radius: 24px;
+            background: #F2F5EE;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-height: 300px;
+            object-fit: contain;
+        }
+        .keywords {
+            background: #F0F5ED;
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            margin: 16px 0 8px;
+        }
+        .keyword {
+            background: white;
+            padding: 4px 14px;
+            border-radius: 30px;
+            margin: 0 6px;
+            font-weight: 500;
+            color: #6B8E7F;
+        }
+        textarea {
+            width: 100%;
+            padding: 16px;
+            font-size: 1rem;
+            border-radius: 24px;
+            border: 1px solid #D4DCD0;
+            font-family: inherit;
+            resize: vertical;
+            margin: 16px 0;
+        }
+        button {
+            background: #8FB9A8;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: #6B8E7F;
+            transform: scale(1.02);
+        }
+        .result {
+            margin-top: 24px;
+            padding: 20px;
+            background: #F9F8F4;
+            border-radius: 24px;
+        }
+        .score {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #C45A65;
+        }
+        .feedback {
+            margin: 16px 0;
+            line-height: 1.7;
+        }
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-top-color: #6B8E7F;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-left: 12px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none; }
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .nav-buttons button {
+            background: #E2E6DF;
+            color: #5A6852;
+        }
+        hr {
+            margin: 20px 0;
+            border-color: #E2E6DF;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📸 补语造句工坊</h1>
+    <div class="sub">看图片 + 用关键词 → 造一个句子 → AI 帮你批改</div>
+
+    <div class="card">
+        <div class="image-panel">
+            <img id="sceneImage" src="" alt="场景图片">
+        </div>
+        <div class="text-center">
+            <div class="keywords">
+                ✨ 必须使用的关键词：
+                <span id="keyword1" class="keyword"></span> +
+                <span id="keyword2" class="keyword"></span>
+            </div>
+        </div>
+        <textarea id="sentenceInput" rows="3" placeholder="例如：我把衣服洗干净了。"></textarea>
+        <div class="text-center">
+            <button id="submitBtn">🤖 AI 批改句子</button>
+        </div>
+
+        <!-- 批改结果区域 -->
+        <div id="resultArea" class="result hidden">
+            <h3>📝 批改结果</h3>
+            <div><span class="score" id="scoreValue">—</span> 分</div>
+            <div><strong>补语类型：</strong> <span id="complementType"></span></div>
+            <div class="feedback" id="commentText"></div>
+            <div><strong>✏️ 修改建议：</strong> <span id="correctionText"></span></div>
+            <div><strong>💪 鼓励语：</strong> <span id="encouragementText"></span></div>
+        </div>
+
+        <div class="nav-buttons">
+            <button id="prevBtn">◀ 上一题</button>
+            <button id="nextBtn">下一题 ▶</button>
+        </div>
+        <p class="sub" style="margin-top:20px; font-size:0.8rem;">⭐ 每个句子都会由 AI 智能评估补语使用是否正确，并提供修改建议。</p>
+    </div>
+</div>
+
+<script>
+    // 图片库数据（图片使用免费占位图，也可以换成你自己的图片URL）
+    // 每张图片包含：图片URL，场景描述，两个关键词
+    const imageLibrary = [
+        {
+            url: "https://picsum.photos/id/20/600/400",  // 洗衣服场景（示例图片）
+            description: "一个人正在洗一件沾了污渍的白衬衫",
+            keywords: ["洗", "干净"],
+            hint: "结果补语"
+        },
+        {
+            url: "https://picsum.photos/id/122/600/400",  // 书架高处的书
+            description: "书在书架顶层，人伸手去拿",
+            keywords: ["拿", "下来"],
+            hint: "趋向补语"
+        },
+        {
+            url: "https://picsum.photos/id/128/600/400",  // 搬重箱子
+            description: "一个人搬一个大箱子，表情很吃力",
+            keywords: ["搬", "不动"],
+            hint: "可能补语"
+        },
+        {
+            url: "https://picsum.photos/id/29/600/400",   // 开心大笑
+            description: "一个人在看搞笑视频，笑得前仰后合",
+            keywords: ["笑", "前仰后合"],
+            hint: "程度补语"
+        },
+        {
+            url: "https://picsum.photos/id/96/600/400",   // 跑步
+            description: "运动员在跑步比赛中飞快地跑",
+            keywords: ["跑", "很快"],
+            hint: "状态补语"
+        }
+    ];
+
+    let currentIndex = 0;
+
+    function loadImage(index) {
+        const img = document.getElementById("sceneImage");
+        const data = imageLibrary[index];
+        img.src = data.url;
+        document.getElementById("keyword1").innerText = data.keywords[0];
+        document.getElementById("keyword2").innerText = data.keywords[1];
+        // 清空之前的输入和结果
+        document.getElementById("sentenceInput").value = "";
+        document.getElementById("resultArea").classList.add("hidden");
+    }
+
+    async function submitSentence() {
+        const sentence = document.getElementById("sentenceInput").value.trim();
+        if (!sentence) {
+            alert("请先造一个句子～");
+            return;
+        }
+        const data = imageLibrary[currentIndex];
+        const keywords = data.keywords;
+        const imageDesc = data.description;
+
+        const submitBtn = document.getElementById("submitBtn");
+        const originalText = submitBtn.innerText;
+        submitBtn.innerText = "AI 批改中 ⏳";
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch("/api/grade", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sentence: sentence,
+                    keywords: keywords,
+                    imageDescription: imageDesc
+                })
+            });
+            const result = await response.json();
+            displayResult(result);
+        } catch (err) {
+            alert("网络或服务器错误，请稍后再试。");
+            console.error(err);
+        } finally {
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    function displayResult(res) {
+        document.getElementById("scoreValue").innerText = res.score;
+        document.getElementById("complementType").innerText = res.complementType || "未识别";
+        document.getElementById("commentText").innerHTML = res.comment || "暂无评语";
+        document.getElementById("correctionText").innerHTML = res.correction || "无需修改";
+        document.getElementById("encouragementText").innerHTML = res.encouragement || "继续加油！";
+        document.getElementById("resultArea").classList.remove("hidden");
+    }
+
+    document.getElementById("submitBtn").onclick = submitSentence;
+    document.getElementById("prevBtn").onclick = () => {
+        currentIndex = (currentIndex - 1 + imageLibrary.length) % imageLibrary.length;
+        loadImage(currentIndex);
+    };
+    document.getElementById("nextBtn").onclick = () => {
+        currentIndex = (currentIndex + 1) % imageLibrary.length;
+        loadImage(currentIndex);
+    };
+
+    // 初始化第一张
+    loadImage(0);
+</script>
+</body>
+</html>
