@@ -1,49 +1,43 @@
-// 使用 DeepSeek API 批改句子
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  // 允许跨域（方便调试）
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  try {
+    // 只接受 POST
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-  const { sentence, keywords, imageDescription } = req.body;
+    // 检查环境变量
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      console.error('环境变量 DEEPSEEK_API_KEY 未设置');
+      return res.status(500).json({ 
+        error: 'DEEPSEEK_API_KEY 环境变量未设置',
+        hint: '请在 Vercel 项目 Settings → Environment Variables 中添加'
+      });
+    }
 
-  if (!sentence || !keywords) {
-    return res.status(400).json({ error: '缺少必要参数' });
-  }
+    // 解析请求体
+    const { sentence, keywords, imageDescription } = req.body;
+    if (!sentence || !keywords) {
+      return res.status(400).json({ error: '缺少 sentence 或 keywords' });
+    }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: '服务器配置错误：未设置 DEEPSEEK_API_KEY' });
-  }
+    // 构造提示词
+    const prompt = `你是一位汉语语法专家。请根据图片描述（${imageDescription}）和关键词（${keywords.join('、')}），评价学生的造句：“${sentence}”。要求关注补语的使用是否正确。
 
-  const prompt = `你是一位汉语语法专家，专门评估学生造句中**补语**的使用是否正确。
-
-【任务】根据图片描述和关键词，判断学生的造句是否恰当，特别关注补语。
-
-【规则】
-1. 没有补语扣分（最多扣30分）。
-2. 补语正确则指出类型（结果/趋向/可能/程度/状态）。
-3. 补语错误则解释原因并给出正确句子。
-4. 检查主谓宾、语序、逻辑。
-5. 评分：0-100分。
-
-【图片描述】${imageDescription}
-【关键词】${keywords.join('、')}
-【学生造句】${sentence}
-
-【输出格式】严格 JSON：
+输出格式必须是 JSON：
 {
-  "score": 整数,
-  "complementType": "结果补语/趋向补语/可能补语/程度补语/状态补语/无",
-  "isCorrect": true/false,
-  "comment": "详细评价",
-  "correction": "错误时的正确句子",
-  "encouragement": "鼓励语"
+  "score": 85,
+  "complementType": "结果补语",
+  "isCorrect": true,
+  "comment": "句子完整，补语使用正确。",
+  "correction": "",
+  "encouragement": "很好！"
 }`;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-  try {
+    // 调用 DeepSeek API
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -53,41 +47,48 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'deepseek-chat',
         messages: [
-          { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON.' },
+          { role: 'system', content: 'You are a helpful assistant. Output only valid JSON.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.3,
+        temperature: 0.2,
         response_format: { type: 'json_object' }
-      }),
-      signal: controller.signal,
+      })
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('DeepSeek API 错误:', errorText);
-      return res.status(500).json({ error: 'AI 服务调用失败' });
+      console.error('DeepSeek API 返回错误:', response.status, errorText);
+      return res.status(500).json({ error: 'DeepSeek API 调用失败', details: errorText });
     }
 
     const data = await response.json();
     const aiContent = data.choices[0]?.message?.content || '{}';
-    const parsed = JSON.parse(aiContent);
+    console.log('AI 返回:', aiContent);
 
-    return res.status(200).json({
+    let parsed;
+    try {
+      parsed = JSON.parse(aiContent);
+    } catch (e) {
+      console.error('JSON 解析失败:', aiContent);
+      parsed = {};
+    }
+
+    const result = {
       score: parsed.score ?? 0,
       complementType: parsed.complementType ?? '未识别',
       isCorrect: parsed.isCorrect ?? false,
-      comment: parsed.comment ?? '暂无评价',
+      comment: parsed.comment ?? '无评语',
       correction: parsed.correction ?? '',
-      encouragement: parsed.encouragement ?? '继续努力！'
-    });
+      encouragement: parsed.encouragement ?? '继续加油！'
+    };
+
+    return res.status(200).json(result);
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      return res.status(504).json({ error: 'AI 响应超时，请稍后重试' });
-    }
-    console.error('请求异常:', error);
-    return res.status(500).json({ error: '服务器内部错误' });
+    console.error('Handler 捕获错误:', error);
+    return res.status(500).json({ 
+      error: '服务器内部错误', 
+      message: error.message,
+      stack: error.stack 
+    });
   }
 }
