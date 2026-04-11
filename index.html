@@ -261,13 +261,17 @@
     }
 
     function displayResult(res) {
-        document.getElementById("scoreValue").innerText = res.score;
-        document.getElementById("complementType").innerText = res.complementType || "未识别";
-        document.getElementById("commentText").innerHTML = res.comment || "暂无评语";
-        document.getElementById("correctionText").innerHTML = res.correction || "无需修改";
-        document.getElementById("encouragementText").innerHTML = res.encouragement || "继续加油！";
-        document.getElementById("resultArea").classList.remove("hidden");
-    }
+    document.getElementById("scoreValue").innerText = res.score || "—";
+    document.getElementById("complementType").innerText = res.complementType || "未识别";
+    document.getElementById("commentText").innerHTML = res.comment || "暂无评语";
+    document.getElementById("correctionText").innerHTML = res.correction || "无需修改";
+    document.getElementById("encouragementText").innerHTML = res.encouragement || "继续加油！";
+
+    document.getElementById("errorDetail").innerText = res.errorDetail || "无";
+    document.getElementById("keywordCheck").innerText = res.keywordCheck || "正常";
+
+    document.getElementById("resultArea").classList.remove("hidden");
+}
 
     document.getElementById("submitBtn").onclick = submitSentence;
     document.getElementById("prevBtn").onclick = () => {
