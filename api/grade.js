@@ -1,94 +1,85 @@
 export default async function handler(req, res) {
-  // 允许跨域（方便调试）
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  
-  try {
-    // 只接受 POST
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "只支持 POST 请求" });
+  }
 
-    // 检查环境变量
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-    if (!apiKey) {
-      console.error('环境变量 DEEPSEEK_API_KEY 未设置');
-      return res.status(500).json({ 
-        error: 'DEEPSEEK_API_KEY 环境变量未设置',
-        hint: '请在 Vercel 项目 Settings → Environment Variables 中添加'
-      });
-    }
+  const { sentence, keywords, imageDescription } = req.body;
 
-    // 解析请求体
-    const { sentence, keywords, imageDescription } = req.body;
-    if (!sentence || !keywords) {
-      return res.status(400).json({ error: '缺少 sentence 或 keywords' });
-    }
+  if (!sentence) {
+    return res.status(400).json({ message: "句子不能为空" });
+  }
 
-    // 构造提示词
-    const prompt = `你是一位汉语语法专家。请根据图片描述（${imageDescription}）和关键词（${keywords.join('、')}），评价学生的造句：“${sentence}”。要求关注补语的使用是否正确。
+  const prompt = `
+你是一位专业的对外汉语老师，请批改学生句子。
 
-输出格式必须是 JSON：
+【任务】
+- 学生必须使用关键词：${keywords.join("、")}
+- 场景：${imageDescription}
+- 判断补语类型（结果 / 趋向 / 可能 / 程度 / 状态）
+- 检查语法和自然度
+- 给出修改句
+
+【评分标准】
+- 补语使用（40分）
+- 语法（30分）
+- 自然度（30分）
+
+【必须输出 JSON（不能有任何多余文字）】
 {
-  "score": 85,
-  "complementType": "结果补语",
-  "isCorrect": true,
-  "comment": "句子完整，补语使用正确。",
-  "correction": "",
-  "encouragement": "很好！"
-}`;
+  "score": number,
+  "complementType": "字符串",
+  "comment": "指出具体问题",
+  "correction": "修改后的句子",
+  "encouragement": "一句鼓励的话",
+  "errorDetail": "具体错误解释（如有）",
+  "keywordCheck": "关键词使用情况"
+}
 
-    // 调用 DeepSeek API
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
+学生句子：${sentence}
+`;
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant. Output only valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.2,
-        response_format: { type: 'json_object' }
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('DeepSeek API 返回错误:', response.status, errorText);
-      return res.status(500).json({ error: 'DeepSeek API 调用失败', details: errorText });
-    }
-
     const data = await response.json();
-    const aiContent = data.choices[0]?.message?.content || '{}';
-    console.log('AI 返回:', aiContent);
 
-    let parsed;
+    let text = data.choices[0].message.content;
+
+    // 清理 ```json
+    text = text.replace(/```json|```/g, "").trim();
+
+    let result;
+
     try {
-      parsed = JSON.parse(aiContent);
+      result = JSON.parse(text);
     } catch (e) {
-      console.error('JSON 解析失败:', aiContent);
-      parsed = {};
+      throw new Error("JSON解析失败");
     }
-
-    const result = {
-      score: parsed.score ?? 0,
-      complementType: parsed.complementType ?? '未识别',
-      isCorrect: parsed.isCorrect ?? false,
-      comment: parsed.comment ?? '无评语',
-      correction: parsed.correction ?? '',
-      encouragement: parsed.encouragement ?? '继续加油！'
-    };
 
     return res.status(200).json(result);
+
   } catch (error) {
-    console.error('Handler 捕获错误:', error);
-    return res.status(500).json({ 
-      error: '服务器内部错误', 
-      message: error.message,
-      stack: error.stack 
+    console.error("AI错误:", error);
+
+    return res.status(200).json({
+      score: 60,
+      complementType: "未识别",
+      comment: "系统暂时无法分析，请重试",
+      correction: sentence,
+      encouragement: "再试一次！",
+      errorDetail: "AI返回异常",
+      keywordCheck: "未检测"
     });
   }
 }
