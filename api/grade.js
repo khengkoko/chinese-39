@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "只支持 POST 请求" });
+    return res.status(405).json({ message: "Only POST allowed" });
   }
 
   const { sentence, keywords, imageDescription } = req.body;
@@ -10,32 +10,34 @@ export default async function handler(req, res) {
   }
 
   const prompt = `
-你是一位专业的对外汉语老师，请批改学生句子。
+你是一名专业对外汉语老师，正在批改学生造句。
 
 【任务】
-- 学生必须使用关键词：${keywords.join("、")}
+- 检查学生句子是否正确
+- 必须使用关键词：${keywords?.join("、")}
 - 场景：${imageDescription}
-- 判断补语类型（结果 / 趋向 / 可能 / 程度 / 状态）
-- 检查语法和自然度
-- 给出修改句
 
-【评分标准】
-- 补语使用（40分）
-- 语法（30分）
-- 自然度（30分）
+【你必须做的事情】
+1. 判断是否正确
+2. 找出错误（如果有）
+3. 给出标准正确句子（非常重要！）
+4. 简单解释原因
+5. 给鼓励
 
-【必须输出 JSON（不能有任何多余文字）】
+【必须严格输出 JSON，不允许任何解释文字】
+
+格式如下：
 {
   "score": number,
-  "complementType": "字符串",
-  "comment": "指出具体问题",
-  "correction": "修改后的句子",
-  "encouragement": "一句鼓励的话",
-  "errorDetail": "具体错误解释（如有）",
-  "keywordCheck": "关键词使用情况"
+  "isCorrect": boolean,
+  "error": "错误说明（没有错误写'无'）",
+  "correction": "标准正确句子",
+  "explanation": "简单解释",
+  "encouragement": "鼓励语"
 }
 
-学生句子：${sentence}
+学生句子：
+${sentence}
 `;
 
   try {
@@ -47,16 +49,25 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3
+        messages: [
+          {
+            role: "system",
+            content: "你必须只输出JSON，不允许任何解释，不允许Markdown。"
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.2
       })
     });
 
     const data = await response.json();
 
-    let text = data.choices[0].message.content;
+    let text = data?.choices?.[0]?.message?.content || "";
 
-    // 清理 ```json
+    // 清理 AI 输出
     text = text.replace(/```json|```/g, "").trim();
 
     let result;
@@ -64,22 +75,29 @@ export default async function handler(req, res) {
     try {
       result = JSON.parse(text);
     } catch (e) {
-      throw new Error("JSON解析失败");
+      // ❗AI没按格式输出时的兜底（保证一定有结果）
+      return res.status(200).json({
+        score: 60,
+        isCorrect: false,
+        error: "AI格式错误",
+        correction: sentence + "（AI修正失败，但已返回原句）",
+        explanation: "系统无法解析AI输出，但已返回结果",
+        encouragement: "继续加油！"
+      });
     }
 
     return res.status(200).json(result);
 
   } catch (error) {
-    console.error("AI错误:", error);
+    console.error(error);
 
     return res.status(200).json({
-      score: 60,
-      complementType: "未识别",
-      comment: "系统暂时无法分析，请重试",
+      score: 50,
+      isCorrect: false,
+      error: "服务器错误",
       correction: sentence,
-      encouragement: "再试一次！",
-      errorDetail: "AI返回异常",
-      keywordCheck: "未检测"
+      explanation: "系统异常",
+      encouragement: "再试一次！"
     });
   }
 }
