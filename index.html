@@ -3,288 +3,538 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>补语造句工坊 · AI 批改</title>
+    <title>🌿 自然枝 · 繁花落 · 三倍瓣</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #FDFBF7;
-            font-family: 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
-            padding: 30px 20px;
-            color: #2C3A2F;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .card {
-            background: white;
-            border-radius: 32px;
-            padding: 28px;
-            margin-bottom: 24px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-            border: 1px solid #E2E6DF;
-        }
-        h1 {
-            font-size: 2rem;
-            color: #6B8E7F;
-            text-align: center;
-            margin-bottom: 8px;
-        }
-        .sub {
-            text-align: center;
-            color: #7C8E7A;
-            margin-bottom: 32px;
-        }
-        .image-panel {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        .image-panel img {
-            max-width: 100%;
-            border-radius: 24px;
-            background: #F2F5EE;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            max-height: 300px;
-            object-fit: contain;
-        }
-        .keywords {
-            background: #F0F5ED;
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-size: 1.1rem;
-            margin: 16px 0 8px;
-        }
-        .keyword {
-            background: white;
-            padding: 4px 14px;
-            border-radius: 30px;
-            margin: 0 6px;
-            font-weight: 500;
-            color: #6B8E7F;
-        }
-        textarea {
-            width: 100%;
-            padding: 16px;
-            font-size: 1rem;
-            border-radius: 24px;
-            border: 1px solid #D4DCD0;
-            font-family: inherit;
-            resize: vertical;
-            margin: 16px 0;
-        }
-        button {
-            background: #8FB9A8;
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 40px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        button:hover {
-            background: #6B8E7F;
-            transform: scale(1.02);
-        }
-        .result {
-            margin-top: 24px;
-            padding: 20px;
-            background: #F9F8F4;
-            border-radius: 24px;
-        }
-        .score {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: #C45A65;
-        }
-        .feedback {
-            margin: 16px 0;
-            line-height: 1.7;
-        }
-        .loader {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ddd;
-            border-top-color: #6B8E7F;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            margin-left: 12px;
-            vertical-align: middle;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .hidden { display: none; }
-        .nav-buttons {
+            background: radial-gradient(circle at 50% 30%, #fff7fa 0%, #f3e7ec 45%, #e6d6de 100%);
+            min-height: 100vh;
             display: flex;
-            gap: 12px;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            margin-top: 20px;
+            font-family: 'Segoe UI', 'Noto Sans SC', sans-serif;
+            overflow: hidden;
         }
-        .nav-buttons button {
-            background: #E2E6DF;
-            color: #5A6852;
+        .scene-wrap { display: flex; flex-direction: column; align-items: center; transition: opacity 0.9s ease; }
+        .scene-wrap.hidden-scene { opacity: 0; pointer-events: none; }
+
+        .tree-wrapper {
+            position: relative;
+            width: min(86vw, 600px);
+            height: min(92vh, 650px);
+            margin: 0 auto;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.05)) blur(0.3px);
         }
-        hr {
-            margin: 20px 0;
-            border-color: #E2E6DF;
+        canvas, .flowers-layer, .petals-layer {
+            position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+        }
+        canvas { z-index: 1; }
+        .flowers-layer { z-index: 2; pointer-events: none; }
+        .petals-layer { z-index: 3; pointer-events: none; overflow: visible; }
+
+        .flower {
+            position: absolute; width: 24px; height: 24px; opacity: 0;
+            transform-origin: center;
+            animation: bloomFlower 0.5s cubic-bezier(0.25,0.1,0.25,1) forwards;
+            pointer-events: none;
+        }
+        .petal {
+            position: absolute; width: 10px; height: 17px; left: 7px; top: 2px;
+            background: linear-gradient(to bottom, #fff5f8, #ffc9da 60%, #f3a6c0);
+            opacity: 0.85; filter: blur(0.2px);
+            border-radius: 50% 50% 40% 40% / 15% 15% 85% 85%;
+            transform-origin: center 8px; box-shadow: 0 2px 6px rgba(240,160,180,0.1);
+        }
+        .p1 { transform: rotate(0deg); } .p2 { transform: rotate(72deg); }
+        .p3 { transform: rotate(144deg); } .p4 { transform: rotate(216deg); } .p5 { transform: rotate(288deg); }
+        .stamen {
+            position: absolute; width: 4px; height: 4px; background: #ffe8b0; border-radius: 50%; left: 10px; top: 10px; opacity: 0.8;
+        }
+
+        .falling-petal {
+            position: absolute; width: 12px; height: 12px; background: #ffc9da; opacity: 0.75;
+            filter: blur(0.4px); border-radius: 100% 0 100% 40%; transform-origin: center;
+            box-shadow: 0 4px 8px rgba(200,140,160,0.08);
+            animation: petalFlyWithWind 14s cubic-bezier(0.4, 0.0, 0.2, 1) forwards; pointer-events: none;
+        }
+        .sway-flowers { animation: gentleSwayFlowers 3.5s infinite ease-in-out; }
+
+        .caption {
+            margin-top: 20px; font-size: 1.6rem; color: #b09aa4; font-family: 'Times New Roman', serif;
+            letter-spacing: 8px; font-weight: 300; opacity: 0;
+            animation: fadeIn 2s forwards; animation-delay: 2s; text-shadow: 0 2px 10px rgba(255,240,245,0.8);
+        }
+        .replay-btn {
+            margin-top: 18px; padding: 10px 32px; background: rgba(255,245,248,0.7); backdrop-filter: blur(4px);
+            border: 1px solid rgba(220,180,190,0.3); border-radius: 60px; color: #9b7a84; font-size: 1rem;
+            cursor: pointer; transition: 0.25s; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .replay-btn:hover { background: rgba(255,235,240,0.9); color: #7a5c66; box-shadow: 0 6px 16px rgba(200,160,170,0.1); }
+
+        .storm-layer {
+            position: fixed; inset: 0; z-index: 99; pointer-events: none;
+            opacity: 0; transition: opacity 0.4s ease;
+            background: radial-gradient(circle at center, rgba(255,246,250,0.35), rgba(255,236,244,0.92));
+        }
+        .storm-layer.active { opacity: 1; }
+        .storm-petal {
+            position: absolute; left: 0; top: 0; width: 14px; height: 14px;
+            border-radius: 100% 0 100% 40%;
+            background: linear-gradient(to bottom right, #ffe9f0, #ffc7d9 65%, #f2a0be);
+            box-shadow: 0 6px 14px rgba(170,95,130,0.18);
+            opacity: 0.88;
+            will-change: transform, opacity;
+        }
+
+        @keyframes bloomFlower {
+            0% { opacity: 0; transform: scale(0.3) rotate(-5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        @keyframes gentleSwayFlowers {
+            0%,100% { transform: rotate(0deg); } 25% { transform: rotate(1.5deg); } 75% { transform: rotate(-1.5deg); }
+        }
+        @keyframes petalFlyWithWind {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 0.9; }
+            100% { transform: translate(calc(var(--flyX) * 1.5), 360px) rotate(280deg); opacity: 0; }
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>📸 补语造句工坊</h1>
-    <div class="sub">看图片 + 用关键词 → 造一个句子 → AI 帮你批改</div>
-
-    <div class="card">
-        <div class="image-panel">
-            <img id="sceneImage" src="" alt="场景图片">
-        </div>
-        <div class="text-center">
-            <div class="keywords">
-                ✨ 必须使用的关键词：
-                <span id="keyword1" class="keyword"></span> +
-                <span id="keyword2" class="keyword"></span>
-            </div>
-        </div>
-        <textarea id="sentenceInput" rows="3" placeholder="例如：我把衣服洗干净了。"></textarea>
-        <div class="text-center">
-            <button id="submitBtn">🤖 AI 批改句子</button>
-        </div>
-
-        <!-- 批改结果区域 -->
-        <div id="resultArea" class="result hidden">
-            <h3>📝 批改结果</h3>
-            <div><span class="score" id="scoreValue">—</span> 分</div>
-            <div><strong>补语类型：</strong> <span id="complementType"></span></div>
-            <div class="feedback" id="commentText"></div>
-            <div><strong>✏️ 修改建议：</strong> <span id="correctionText"></span></div>
-            <div><strong>💪 鼓励语：</strong> <span id="encouragementText"></span></div>
-        </div>
-
-        <div class="nav-buttons">
-            <button id="prevBtn">◀ 上一题</button>
-            <button id="nextBtn">下一题 ▶</button>
-        </div>
-        <p class="sub" style="margin-top:20px; font-size:0.8rem;">⭐ 每个句子都会由 AI 智能评估补语使用是否正确，并提供修改建议。</p>
+<div class="scene-wrap" id="sceneWrap">
+    <div class="tree-wrapper" id="treeWrapper">
+        <canvas id="treeCanvas" width="600" height="650"></canvas>
+        <div class="flowers-layer" id="flowersLayer"></div>
+        <div class="petals-layer" id="petalsLayer"></div>
     </div>
+    <div class="caption" id="caption">風が吹くと、花は静かに消えていく</div>
+    <button class="replay-btn" id="replayBtn">🌸 再一度 · 風を待つ</button>
 </div>
+<div class="storm-layer" id="stormLayer"></div>
 
 <script>
-    // 图片库数据（图片使用免费占位图，也可以换成你自己的图片URL）
-    // 每张图片包含：图片URL，场景描述，两个关键词
-    const imageLibrary = [
-        {
-            url: "https://picsum.photos/id/20/600/400",  // 洗衣服场景（示例图片）
-            description: "一个人正在洗一件沾了污渍的白衬衫",
-            keywords: ["洗", "干净"],
-            hint: "结果补语"
-        },
-        {
-            url: "https://picsum.photos/id/122/600/400",  // 书架高处的书
-            description: "书在书架顶层，人伸手去拿",
-            keywords: ["拿", "下来"],
-            hint: "趋向补语"
-        },
-        {
-            url: "https://picsum.photos/id/128/600/400",  // 搬重箱子
-            description: "一个人搬一个大箱子，表情很吃力",
-            keywords: ["搬", "不动"],
-            hint: "可能补语"
-        },
-        {
-            url: "https://picsum.photos/id/29/600/400",   // 开心大笑
-            description: "一个人在看搞笑视频，笑得前仰后合",
-            keywords: ["笑", "前仰后合"],
-            hint: "程度补语"
-        },
-        {
-            url: "https://picsum.photos/id/96/600/400",   // 跑步
-            description: "运动员在跑步比赛中飞快地跑",
-            keywords: ["跑", "很快"],
-            hint: "状态补语"
+(() => {
+    const canvas = document.getElementById('treeCanvas');
+    const ctx = canvas.getContext('2d');
+    const flowersLayer = document.getElementById('flowersLayer');
+    const petalsLayer = document.getElementById('petalsLayer');
+    const caption = document.getElementById('caption');
+    const replayBtn = document.getElementById('replayBtn');
+    const sceneWrap = document.getElementById('sceneWrap');
+    const stormLayer = document.getElementById('stormLayer');
+
+    const flowerCount = 1100;
+    const maxBlown = 560;
+    let totalBlown = 0;
+    let flowerElements = [];
+    let flowerData = [];
+    let animationFrame = null;
+    let startTime = null;
+    const totalDuration = 10200; // 约 10 秒进入终场风暴
+
+    const trunkBase = { x: 300, y: 600 };
+    const trunkTop = { x: 300, y: 400 };
+
+    let branches = [];
+    let allEndPoints = [];
+    let windStrength = 0;
+    let windPhase = 0;
+    const windDirection = 1;
+    const maxWindOffset = 24;
+    let treeLean = 0;
+    let treeVelocity = 0;
+    let swayTime = 0;
+
+    let stormRAF = null;
+    let stormRunning = false;
+    let stormPetals = [];
+
+    function generateBranch(start, angle, length, thickness, depth, parentOffset = null) {
+        if (depth > 4) return;
+        const midAngle = angle + (Math.random() - 0.5) * 0.4;
+        const endAngle = angle + (Math.random() - 0.5) * 0.3;
+        const end = { x: start.x + Math.cos(endAngle) * length, y: start.y + Math.sin(endAngle) * length };
+        const cp = {
+            x: start.x + Math.cos(midAngle) * length * 0.5 + (Math.random() - 0.5) * 10,
+            y: start.y + Math.sin(midAngle) * length * 0.5 + (Math.random() - 0.5) * 10
+        };
+        const currentOffset = parentOffset || { x: 0, y: 0 };
+        const branchObj = { start, end, cp, thickness, depth, baseEnd: { ...end }, parentOffset: { ...currentOffset }, currentOffset: { x: 0, y: 0 }, endAngle };
+        branches.push(branchObj);
+        if (depth >= 2) allEndPoints.push({ x: end.x, y: end.y, depth, branchRef: branchObj, angle: endAngle });
+
+        const childCount = depth === 0 ? 3 : (Math.random() > 0.2 ? 2 : 1);
+        for (let i = 0; i < childCount; i++) {
+            const spread = 0.5 + Math.random() * 0.7;
+            const newAngle = angle + (i - (childCount - 1) / 2) * spread + (Math.random() - 0.5) * 0.3;
+            generateBranch(end, newAngle, length * (0.6 + Math.random() * 0.25), thickness * (0.6 + Math.random() * 0.1), depth + 1, currentOffset);
         }
-    ];
-
-    let currentIndex = 0;
-
-    function loadImage(index) {
-        const img = document.getElementById("sceneImage");
-        const data = imageLibrary[index];
-        img.src = data.url;
-        document.getElementById("keyword1").innerText = data.keywords[0];
-        document.getElementById("keyword2").innerText = data.keywords[1];
-        // 清空之前的输入和结果
-        document.getElementById("sentenceInput").value = "";
-        document.getElementById("resultArea").classList.add("hidden");
     }
 
-    async function submitSentence() {
-        const sentence = document.getElementById("sentenceInput").value.trim();
-        if (!sentence) {
-            alert("请先造一个句子～");
-            return;
+    function initBranches() {
+        branches = []; allEndPoints = [];
+        const start = { x: 300, y: 400 };
+        generateBranch(start, -1.57, 100, 10, 0);
+        generateBranch(start, -0.7, 85, 8, 0);
+        generateBranch(start, -2.4, 85, 8, 0);
+    }
+
+    function drawTrunk(progress) {
+        const currentHeight = (trunkBase.y - trunkTop.y) * progress;
+        const currentY = trunkBase.y - currentHeight;
+        ctx.beginPath();
+        ctx.moveTo(trunkBase.x - 12, trunkBase.y);
+        ctx.lineTo(trunkBase.x - 10, currentY);
+        ctx.lineTo(trunkBase.x + 10, currentY);
+        ctx.lineTo(trunkBase.x + 12, trunkBase.y);
+        ctx.closePath();
+        ctx.fillStyle = '#8e735b';
+        ctx.fill();
+    }
+
+    function drawWindWave() {
+        const t = Date.now() * 0.002;
+        for (let i = 0; i < 3; i++) {
+            const radius = (t * 60 + i * 140) % 500;
+            ctx.beginPath(); ctx.arc(180, 280, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255,255,255,${0.12 - radius / 1000})`;
+            ctx.lineWidth = 2.5; ctx.stroke();
         }
-        const data = imageLibrary[currentIndex];
-        const keywords = data.keywords;
-        const imageDesc = data.description;
+    }
 
-        const submitBtn = document.getElementById("submitBtn");
-        const originalText = submitBtn.innerText;
-        submitBtn.innerText = "AI 批改中 ⏳";
-        submitBtn.disabled = true;
+    function drawWindLines() {
+        const alpha = Math.min(windStrength * 0.3, 0.25);
+        ctx.strokeStyle = `rgba(255,255,255,${alpha})`; ctx.lineWidth = 2;
+        const now = Date.now() / 160;
+        for (let i = 0; i < 7; i++) {
+            const y = 180 + i * 60;
+            const offset = (now * windStrength * 2 + i * 80) % 700 - 100;
+            ctx.beginPath(); ctx.moveTo(offset - 30, y); ctx.lineTo(offset + 70, y + 18); ctx.stroke();
+        }
+    }
 
-        try {
-            const response = await fetch("/api/grade", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    sentence: sentence,
-                    keywords: keywords,
-                    imageDescription: imageDesc
-                })
+    function drawBranchFull(branch, progress) {
+        if (progress <= 0) return;
+        const windBaseX = treeLean * maxWindOffset * windDirection;
+        const windBaseY = treeLean * -2.5;
+        const parentX = branch.parentOffset?.x || 0;
+        const parentY = branch.parentOffset?.y || 0;
+
+        const bendFactor = treeLean * (0.8 + branch.depth * 0.6);
+        const extraX = windBaseX * (0.15 + branch.depth * 0.25) + bendFactor * 3.5;
+        const extraY = windBaseY * (0.1 + branch.depth * 0.2) + bendFactor * 1.2;
+        let offsetX = parentX + extraX;
+        let offsetY = parentY + extraY;
+        if (branch.depth === 0) { offsetX = windBaseX * 0.06; offsetY = windBaseY * 0.04; }
+        branch.currentOffset = { x: offsetX, y: offsetY };
+
+        const cpBend = bendFactor * 8;
+        const swayedCp = { x: branch.cp.x + offsetX * 0.7 + cpBend, y: branch.cp.y + offsetY * 0.7 };
+        const swayedEnd = { x: branch.end.x + offsetX + bendFactor * 10, y: branch.end.y + offsetY };
+
+        const p = Math.min(progress, 1);
+        const steps = 14;
+        const points = [];
+        for (let i = 0; i <= steps; i++) {
+            const t = (i / steps) * p;
+            const x = (1 - t) * (1 - t) * branch.start.x + 2 * (1 - t) * t * swayedCp.x + t * t * swayedEnd.x;
+            const y = (1 - t) * (1 - t) * branch.start.y + 2 * (1 - t) * t * swayedCp.y + t * t * swayedEnd.y;
+            const dx = 2 * (1 - t) * (swayedCp.x - branch.start.x) + 2 * t * (swayedEnd.x - swayedCp.x);
+            const dy = 2 * (1 - t) * (swayedCp.y - branch.start.y) + 2 * t * (swayedEnd.y - swayedCp.y);
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            const nx = -dy / len, ny = dx / len;
+            const thick = branch.thickness * (1 - t * 0.45);
+            points.push({ left: { x: x + nx * thick / 2, y: y + ny * thick / 2 }, right: { x: x - nx * thick / 2, y: y - ny * thick / 2 } });
+        }
+        ctx.beginPath();
+        ctx.moveTo(points[0].left.x, points[0].left.y);
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].left.x, points[i].left.y);
+        for (let i = points.length - 1; i >= 0; i--) ctx.lineTo(points[i].right.x, points[i].right.y);
+        ctx.closePath();
+        ctx.fillStyle = '#8e735b';
+        ctx.fill();
+    }
+
+    function updateFlowerPositions() {
+        flowerData.forEach(item => {
+            const flower = item.element;
+            if (!flower.isConnected) return;
+            let x, y;
+            if (item.branch) {
+                const b = item.branch;
+                x = b.end.x + (b.currentOffset?.x || 0) + item.offsetX;
+                y = b.end.y + (b.currentOffset?.y || 0) + item.offsetY;
+            } else {
+                x = item.baseX + treeLean * 15 * windDirection;
+                y = item.baseY + treeLean * -2;
+            }
+            flower.style.left = `${x}px`;
+            flower.style.top = `${y}px`;
+        });
+    }
+
+    function drawTree(globalProgress) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawTrunk(Math.min(globalProgress / 0.25, 1));
+
+        const depth0 = Math.min(Math.max(0, (globalProgress - 0.18) / 0.25), 1);
+        const depth1 = Math.min(Math.max(0, (globalProgress - 0.38) / 0.22), 1);
+        const depth2 = Math.min(Math.max(0, (globalProgress - 0.55) / 0.18), 1);
+        const depth3 = Math.min(Math.max(0, (globalProgress - 0.68) / 0.15), 1);
+
+        [...branches].sort((a, b) => a.depth - b.depth).forEach(branch => {
+            let bp = branch.depth === 0 ? depth0 : branch.depth === 1 ? depth1 : branch.depth === 2 ? depth2 : depth3;
+            const delay = (branch.start.x * 0.0004) % 0.04;
+            bp = Math.min(Math.max(0, bp - delay) / (1 - delay), 1);
+            if (bp > 0) drawBranchFull(branch, bp);
+        });
+
+        if (windStrength > 0.3) { drawWindWave(); drawWindLines(); }
+        updateFlowerPositions();
+    }
+
+    function generateFlowers() {
+        flowerElements.forEach(f => f.remove());
+        flowerElements = []; flowerData = [];
+        const points = [];
+
+        allEndPoints.forEach(pt => {
+            const count = 5 + Math.floor(Math.random() * 5);
+            for (let i = 0; i < count; i++) {
+                const ang = Math.random() * Math.PI * 2;
+                const dist = 6 + Math.random() * 20;
+                const offsetX = Math.cos(ang) * dist;
+                const offsetY = Math.sin(ang) * dist * 0.8;
+                points.push({ x: pt.x + offsetX, y: pt.y + offsetY, branch: pt.branchRef, offsetX, offsetY, angle: pt.angle });
+            }
+        });
+
+        for (let i = 0; i < 420; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const r = 40 + Math.random() * 120;
+            const x = 300 + Math.cos(ang) * r;
+            const y = 340 + Math.sin(ang) * r * 0.8;
+            points.push({ x, y, branch: null, baseX: x, baseY: y, angle: Math.random() * Math.PI * 2 });
+        }
+
+        points.sort(() => Math.random() - 0.5).slice(0, flowerCount).forEach(pt => {
+            const flower = document.createElement('div');
+            flower.className = 'flower';
+            const jitterX = (Math.random() - 0.5) * 14;
+            const jitterY = (Math.random() - 0.5) * 14;
+            const x = pt.x + jitterX, y = pt.y + jitterY;
+            flower.style.cssText = `left:${x}px;top:${y}px;transform:scale(${0.7 + Math.random() * 0.7}) rotate(${Math.random() * 360}deg);`;
+
+            ['p1', 'p2', 'p3', 'p4', 'p5'].forEach(cls => {
+                const p = document.createElement('div'); p.className = `petal ${cls}`; flower.appendChild(p);
             });
-            const result = await response.json();
-            displayResult(result);
-        } catch (err) {
-            alert("网络或服务器错误，请稍后再试。");
-            console.error(err);
-        } finally {
-            submitBtn.innerText = originalText;
-            submitBtn.disabled = false;
+            const stamen = document.createElement('div'); stamen.className = 'stamen'; flower.appendChild(stamen);
+            flowersLayer.appendChild(flower);
+            flowerElements.push(flower);
+            flowerData.push({ element: flower, branch: pt.branch || null, offsetX: pt.branch ? pt.offsetX + jitterX : jitterX, offsetY: pt.branch ? pt.offsetY + jitterY : jitterY, baseX: pt.branch ? pt.x : x, baseY: pt.branch ? pt.y : y, flyAngle: pt.angle });
+        });
+    }
+
+    function blowFlowersOff(count) {
+        if (totalBlown >= maxBlown) return;
+        const remaining = flowerData.filter(item => item.element.isConnected);
+        if (!remaining.length) return;
+        const blowCount = Math.min(count, remaining.length, maxBlown - totalBlown);
+        if (blowCount <= 0) return;
+        totalBlown += blowCount;
+
+        const selected = [...remaining].sort(() => Math.random() - 0.5).slice(0, blowCount);
+        const wrapperRect = document.getElementById('treeWrapper').getBoundingClientRect();
+        const globalWindX = windStrength * 180 * windDirection;
+        const duration = windStrength > 0.8 ? 2.5 + Math.random() * 3 : windStrength > 0.4 ? 5 + Math.random() * 5 : 10 + Math.random() * 6;
+
+        selected.forEach(item => {
+            const flower = item.element;
+            const rect = flower.getBoundingClientRect();
+            const baseLeft = rect.left - wrapperRect.left;
+            const baseTop = rect.top - wrapperRect.top - (windStrength * 35);
+            const flowerWidth = flower.offsetWidth;
+            flower.remove();
+
+            const flyX = Math.cos(item.flyAngle || 0) * 140 + globalWindX;
+            for (let i = 0; i < 3; i++) {
+                const petal = document.createElement('div');
+                petal.className = 'falling-petal';
+                const left = baseLeft + (Math.random() - 0.5) * 10;
+                const top = baseTop + (Math.random() - 0.5) * 10;
+                const delay = Math.random() * 2;
+                const size = flowerWidth * (0.35 + Math.random() * 0.2);
+                petal.style.cssText = `left:${left}px;top:${top}px;width:${size}px;height:${size}px;animation-duration:${duration + Math.random() * 2}s;animation-delay:${delay}s;--flyX:${flyX + (Math.random() - 0.5) * 30}px;`;
+                petalsLayer.appendChild(petal);
+                setTimeout(() => petal.remove(), (duration + delay + 2) * 1000);
+            }
+        });
+
+        flowerData = flowerData.filter(item => item.element.isConnected);
+        flowerElements = flowerElements.filter(f => f.isConnected);
+    }
+
+    function startWindBlowing() {
+        blowFlowersOff(120);
+        setTimeout(() => blowFlowersOff(130), 200);
+        setTimeout(() => blowFlowersOff(140), 500);
+        setTimeout(() => blowFlowersOff(110), 900);
+        setTimeout(() => blowFlowersOff(50), 1400);
+        setTimeout(() => blowFlowersOff(30), 2000);
+    }
+
+    function bloomFlowers() {
+        flowerElements.forEach((flower, index) => {
+            flower.style.animation = 'none';
+            flower.offsetHeight;
+            const delay = 0.5 + (index % 50) * 0.01;
+            flower.style.animation = 'bloomFlower 0.5s cubic-bezier(0.25,0.1,0.25,1) forwards';
+            flower.style.animationDelay = `${delay}s`;
+        });
+    }
+
+    function stopFinalStorm() {
+        stormRunning = false;
+        if (stormRAF) cancelAnimationFrame(stormRAF);
+        stormRAF = null;
+        stormLayer.classList.remove('active');
+        stormLayer.innerHTML = '';
+        stormPetals = [];
+    }
+
+    function startFinalStorm() {
+        if (stormRunning) return;
+        stormRunning = true;
+        sceneWrap.classList.add('hidden-scene');
+        stormLayer.classList.add('active');
+        stormLayer.innerHTML = '';
+
+        const count = 280;
+        const centerX = window.innerWidth * 0.5;
+        const centerY = window.innerHeight * 0.52;
+        const maxR = Math.hypot(window.innerWidth, window.innerHeight) * 0.7;
+        const turns = 3.1;
+
+        stormPetals = Array.from({ length: count }, (_, i) => {
+            const el = document.createElement('div');
+            el.className = 'storm-petal';
+            const s = 0.82 + Math.random() * 1.35;
+            el.style.width = `${10 * s}px`;
+            el.style.height = `${14 * s}px`;
+            stormLayer.appendChild(el);
+            return {
+                el,
+                phase: Math.random() * Math.PI * 2,
+                speed: 0.75 + Math.random() * 0.55,
+                orbitBias: i / count,
+                spin: (Math.random() - 0.5) * 300,
+                drift: (Math.random() - 0.5) * 60,
+                jitter: 0.7 + Math.random() * 1.4,
+                lifeShift: Math.random() * 0.3
+            };
+        });
+
+        const started = performance.now();
+        function render(now) {
+            if (!stormRunning) return;
+            const t = (now - started) / 1000;
+            const progress = Math.min(t / 3.6, 1);
+            const ease = 1 - Math.pow(1 - progress, 3);
+
+            stormPetals.forEach((p, i) => {
+                const u = (t * p.speed + p.phase + i * 0.013) % (Math.PI * 2);
+                // 参考 Spiral Search，加入随机扰动与向屏幕扩张
+                const theta = turns * u + p.orbitBias * 7.5;
+                const detailScale = 0.52 + ((Math.sin(u + 0.55) + 1) / 2) * 0.48;
+                const baseRadius = 8.0 + (1 - Math.cos(u)) * (8.5 + 2.4 * detailScale);
+                const spread = baseRadius * (8 + ease * 24) + maxR * ease * (0.35 + p.orbitBias * 0.85);
+                const jitterX = Math.sin(now * 0.002 + i * 0.9) * 8 * p.jitter;
+                const jitterY = Math.cos(now * 0.0024 + i * 1.1) * 7 * p.jitter;
+                const x = centerX + Math.cos(theta) * spread + p.drift * ease + jitterX;
+                const y = centerY + Math.sin(theta) * spread + jitterY;
+                const rot = theta * (180 / Math.PI) + p.spin * (ease + p.lifeShift);
+                const scale = 0.45 + ease * (1.6 + p.orbitBias * 1.2);
+                const opacity = Math.min(0.95, 0.28 + ease * 0.9);
+                p.el.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg) scale(${scale})`;
+                p.el.style.opacity = opacity.toFixed(3);
+            });
+
+            if (progress < 1) {
+                stormRAF = requestAnimationFrame(render);
+            } else {
+                stormLayer.style.background = '#ffd9e7';
+                stormPetals.forEach(p => { p.el.style.opacity = '0.96'; });
+            }
+        }
+        stormRAF = requestAnimationFrame(render);
+    }
+
+    function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / totalDuration, 1);
+
+        if (progress < 0.46) { windPhase = 0; windStrength = 0; }
+        else if (progress < 0.6) { windPhase = 1; windStrength = (progress - 0.46) / 0.14; }
+        else if (progress < 0.76) { windPhase = 2; windStrength = 1; }
+        else if (progress < 0.9) { windPhase = 3; windStrength = 1.15; }
+        else { windPhase = 4; windStrength = 1.4; }
+
+        treeVelocity += ((windStrength * 1.0) - treeLean) * 0.08;
+        treeVelocity *= 0.85;
+        treeLean += treeVelocity;
+        swayTime += windPhase === 1 || windPhase === 2 ? 0.018 + windStrength * 0.02 : 0.012;
+
+        drawTree(progress);
+
+        if (progress >= 0.22 && !window.flowersTriggered) { window.flowersTriggered = true; bloomFlowers(); }
+        if ((windPhase === 2 || windPhase === 3) && !window.petalsTriggered) {
+            window.petalsTriggered = true;
+            flowersLayer.classList.add('sway-flowers');
+            startWindBlowing();
+        }
+        if (progress >= 0.94 && !window.finalStormTriggered) {
+            window.finalStormTriggered = true;
+            startFinalStorm();
+        }
+
+        if (progress < 1) {
+            animationFrame = requestAnimationFrame(animate);
         }
     }
 
-    function displayResult(res) {
-    document.getElementById("scoreValue").innerText = res.score || "—";
-    document.getElementById("complementType").innerText = res.complementType || "未识别";
-    document.getElementById("commentText").innerHTML = res.comment || "暂无评语";
-    document.getElementById("correctionText").innerHTML = res.correction || "无需修改";
-    document.getElementById("encouragementText").innerHTML = res.encouragement || "继续加油！";
+    function startAnimation() {
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+        stopFinalStorm();
+        sceneWrap.classList.remove('hidden-scene');
+        stormLayer.style.background = 'radial-gradient(circle at center, rgba(255,246,250,0.35), rgba(255,236,244,0.92))';
 
-    document.getElementById("errorDetail").innerText = res.errorDetail || "无";
-    document.getElementById("keywordCheck").innerText = res.keywordCheck || "正常";
+        startTime = null; swayTime = 0; windStrength = 0; windPhase = 0;
+        treeLean = 0; treeVelocity = 0; totalBlown = 0;
+        window.flowersTriggered = false; window.petalsTriggered = false; window.finalStormTriggered = false;
 
-    document.getElementById("resultArea").classList.remove("hidden");
-}
+        flowersLayer.classList.remove('sway-flowers');
+        petalsLayer.innerHTML = '';
+        initBranches(); generateFlowers();
 
-    document.getElementById("submitBtn").onclick = submitSentence;
-    document.getElementById("prevBtn").onclick = () => {
-        currentIndex = (currentIndex - 1 + imageLibrary.length) % imageLibrary.length;
-        loadImage(currentIndex);
-    };
-    document.getElementById("nextBtn").onclick = () => {
-        currentIndex = (currentIndex + 1) % imageLibrary.length;
-        loadImage(currentIndex);
-    };
+        flowerElements.forEach(f => { f.style.animation = 'none'; f.style.opacity = '0'; });
+        caption.style.animation = 'none';
+        caption.offsetHeight;
+        caption.style.animation = 'fadeIn 2s forwards';
+        caption.style.animationDelay = '2s';
 
-    // 初始化第一张
-    loadImage(0);
+        drawTree(0);
+        animationFrame = requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('load', startAnimation);
+    replayBtn.addEventListener('click', startAnimation);
+})();
 </script>
 </body>
 </html>
